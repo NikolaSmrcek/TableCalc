@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"github.com/gorilla/mux"
 	"encoding/json"
-	"fmt"
 )
 
 type FrontEndValue struct {
@@ -40,8 +39,7 @@ func SetRedisValueByKey(w http.ResponseWriter, req *http.Request){
 	var frontend FrontEndValue;
 
 	result := json.NewDecoder(req.Body).Decode(&frontend);
-	fmt.Println("result: ", result);
-	fmt.Println("req.Body: ", req.Body);
+
 	if result != nil {
 		responseMessage = "Error decoding data.";
 		statusCode = http.StatusBadRequest;
