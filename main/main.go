@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/NikolaSmrcek/TableCalc/routes"
+	router "github.com/NikolaSmrcek/TableCalc/routes"
 
 	"gopkg.in/redis.v5"
 )
@@ -44,9 +44,9 @@ func main() {
 		return;
 	}
 
-	routes.RedisClient = redisClient;
-	router := routes.NewRouter();
+	router.InitRouter(redisClient);
+	routerObject := router.NewRouter();
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(":8080", routerObject))
 
 }

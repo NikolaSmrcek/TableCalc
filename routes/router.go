@@ -21,7 +21,6 @@ type Route struct {
 type Routes []Route
 
 var routes = Routes{
-
 	Route{
 		"GetRedisValueByKey",
 		"GET",
@@ -31,29 +30,15 @@ var routes = Routes{
 	Route{
 		"SetRedisValueByKey",
 		"POST",
-		"/redis/{key}",
+		"/setCells",
 		SetRedisValueByKey,
 	},
-	/*
 	Route{
-		"TodoIndex",
+		"GetRedisData",
 		"GET",
-		"/todos",
-		TodoIndex,
+		"/redistest",
+		GetRedisData,
 	},
-	Route{
-		"TodoCreate",
-		"POST",
-		"/todos",
-		TodoCreate,
-	},
-	Route{
-		"TodoShow",
-		"GET",
-		"/todos/{todoId}",
-		TodoShow,
-	},
-	*/
 }
 // Used for logging function execution time and to know which route has been called.
 func logger(inner http.Handler, name string) http.Handler {
@@ -102,4 +87,9 @@ func NewRouter() *mux.Router {
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/")));
 	serveStatic(router, "/public/");
 	return router;
+}
+
+func InitRouter(rc *redis.Client) {
+	RedisClient = rc;
+	InitRedisColsAndRows()
 }
