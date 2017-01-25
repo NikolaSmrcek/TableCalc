@@ -2,11 +2,13 @@
  * Created by kanta on 1/21/17.
  */
 
+var hot = null;
+
 document.addEventListener("DOMContentLoaded", function () {
     // data = [
     //    []
     // ];
-    makeAjaxCall(null,"redistest",null,initHandsonTable,null);
+    makeAjaxCall(null,"getInitData",null,initHandsonTable,null);
 
 });
 
@@ -24,7 +26,6 @@ function initHandsonTable(data, textStatus, jqXHR){
     var container = document.getElementById("example"),
         searchField = document.getElementById('search_field'),
         resultCount = document.getElementById('resultCount'),
-        hot,
         searchResultCount = 0;
 
     //Search
@@ -42,17 +43,40 @@ function initHandsonTable(data, textStatus, jqXHR){
                 console.log("Changes is null.");
                 return;
             }
-            console.log("This is fired after change.");
-            console.log("CHANGES: ", changes);
-            console.log("SOURCE: ", source);
             var data = formatChangesForRedis(changes);
             makeAjaxCall("POST", "setCells", data, null,null);
         },
         //afterChange se triggera kada se dogodi promjena.
-        afterCreateRow: function (index, amount, source) {
+        afterCreateRow: function (index, amount) {
             console.log("index: ", index);
             console.log("amount: ", amount);
-            console.log("SOURCE: ", source);
+            var data = formatHotGetDataForRedis(hot.getData());
+            makeAjaxCall("POST", "setCells", data, null,null);
+            makeAjaxCall("POST", "addToList", {"name": "rows", "value": index.toString()}, null,null);
+        },
+        afterCreateCol: function(index, amount) {
+            console.log("index: ", index);
+            console.log("amount: ", amount);
+            var data = formatHotGetDataForRedis(hot.getData());
+            makeAjaxCall("POST", "setCells", data, null,null);
+            makeAjaxCall("POST", "addToList", {"name": "columns", "value": index.toString()}, null,null);
+        },
+        afterRemoveRow: function(index, amount) {
+            var data = formatHotGetDataForRedis(hot.getData());
+            makeAjaxCall("POST", "setCells", data, null,null);
+            makeAjaxCall("POST", "removeFromList", {"name": "rows"}, null,null);
+        },
+        afterRemoveCol: function(index, amount) {
+            var data = formatHotGetDataForRedis(hot.getData());
+            makeAjaxCall("POST", "setCells", data, null,null);
+            makeAjaxCall("POST", "removeFromList", {"name": "columns"}, null,null);
+        },
+        afterColumnSort: function(column, order) {
+            var data = formatHotGetDataForRedis(hot.getData());
+            makeAjaxCall("POST", "setCells", data, null,null);
+        },
+        beforeChange: function(changes, source) {
+            //TODO implement SUM and AVG
         },
         search: {
             callback: searchResultCounter
@@ -101,6 +125,30 @@ function initHandsonTable(data, textStatus, jqXHR){
      }
      bindDumpButton();
      */
+}
+
+function formatHotGetDataForRedis(all_data){
+    if(!all_data || all_data.length == 0){
+        console.log("Changes should be array of at least one element.")
+        return;
+    }
+    var data = [];
+
+    for(var i = 0; i < all_data.length; i++){
+        //getting array of the rows columns so the cell value will be row[j]
+        var row = all_data[i];
+        for(var j = 0; j < row.length; j++){
+            var cell = {
+                "row": i,
+                "column": j,
+                "value": row[j]
+            };
+            cell["redisKey"] = "CELL_"+i.toString()+"_"+j.toString()
+            data.push(cell);
+        }
+    }
+
+    return data;
 }
 
 function formatChangesForRedis(changes){

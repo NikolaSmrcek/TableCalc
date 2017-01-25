@@ -36,8 +36,20 @@ var routes = Routes{
 	Route{
 		"GetRedisData",
 		"GET",
-		"/redistest",
+		"/getInitData",
 		GetRedisData,
+	},
+	Route{
+		"RemoveFromList",
+		"POST",
+		"/removeFromList",
+		RemoveFromList,
+	},
+	Route{
+		"AddToList",
+		"POST",
+		"/addToList",
+		AddToList,
 	},
 }
 // Used for logging function execution time and to know which route has been called.
