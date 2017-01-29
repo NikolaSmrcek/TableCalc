@@ -8,6 +8,7 @@ import (
 	"unicode"
 	"io/ioutil"
 	"os"
+	"time"
 )
 
 var WorkingDirectory string;
@@ -51,9 +52,76 @@ func LoaderFunction(w http.ResponseWriter, req *http.Request){
 	var totalElements interface{} = len(words);
 	RedisClient.HSet("stats","totalElements",totalElements);
 
+	_mapper();
+
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8");
 	w.WriteHeader(statusCode);
 	json.NewEncoder(w).Encode(responseMessage);
+}
+
+func _mapper(){
+
+	//unicode.Terminal_Punctuation
+	fmt.Println("Running mapper...")
+	punctuations := []string{",", ".", ";", ":", "!", "?"};
+	wordsOfInterest := []string{"string", "regex"};
+	fmt.Println("Punctuations: ", punctuations)
+	for element := RedisClient.LPop("loadedElements").Val(); element != ""; element = RedisClient.LPop("loadedElements").Val(){
+		elementMatched := false;
+		redisValue := make([]interface{}, 1);
+		redisValue[0] = element;
+		for i:= 0; i < len(punctuations); i++{
+			if element == punctuations[i]{
+				elementMatched = true;
+				RedisClient.RPush("punctuations", redisValue...);
+				RedisClient.HIncrBy("stats", "punctuations", 1);
+				break;
+			}
+		}
+		if elementMatched{
+			continue;
+		}
+
+		for i:= 0; i < len(wordsOfInterest); i++{
+			if element == wordsOfInterest[i]{
+				elementMatched = true;
+				RedisClient.RPush("wordsOfInterest", redisValue...);
+				RedisClient.HIncrBy("stats", "wordsOfInterest", 1);
+				break;
+			}
+		}
+		if !elementMatched{
+			RedisClient.RPush("wordsOfNoInterest", redisValue...);
+			RedisClient.HIncrBy("stats", "wordsOfNoInterest", 1);
+		}
+
+	}
+	fmt.Println("Mapper function finished...");
+	_reducer();
+}
+
+func _reducer(){
+
+	fmt.Println("Reducer function started...")
+
+	for element := RedisClient.LPop("punctuations").Val(); element != ""; element = RedisClient.LPop("punctuations").Val(){
+		//fmt.Println("punctuations element: ", element);
+		RedisClient.HIncrBy("hpunctuations", element, 1);
+	}
+
+	for element := RedisClient.LPop("wordsOfNoInterest").Val(); element != ""; element = RedisClient.LPop("wordsOfNoInterest").Val(){
+		//fmt.Println("wordsOfNoInterest element: ", element);
+		RedisClient.HIncrBy("hwordsOfNoInterest", element, 1);
+	}
+
+	for element := RedisClient.LPop("wordsOfInterest").Val(); element != ""; element = RedisClient.LPop("wordsOfInterest").Val(){
+		//fmt.Println("wordsOfInterest element: ", element);
+		RedisClient.HIncrBy("hwordsOfInterest", element, 1);
+	}
+
+
+	fmt.Println("Reducer function finished...")
+
 }
 
 func _fields(s string) []string {
