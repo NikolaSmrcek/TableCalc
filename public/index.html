@@ -17,6 +17,11 @@
     <p><span id="resultCount">0</span> results</p>
     <br>
     <div id="example"></div>
+    <br>
+    <form enctype="multipart/form-data" action="http://localhost:8080/upload" method="post">
+        <input type="file" name="file" />
+        <input type="submit" value="upload" />
+    </form>
     <script src="scripts/vendor/jquery.min.js"></script>
     <script src="scripts/vendor/handsontable.full.min.js"></script>
     <script src="scripts/main.js"></script>

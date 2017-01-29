@@ -51,6 +51,12 @@ var routes = Routes{
 		"/addToList",
 		AddToList,
 	},
+	Route{
+		"LoaderFunction",
+		"POST",
+		"/upload",
+		LoaderFunction,
+	},
 }
 // Used for logging function execution time and to know which route has been called.
 func logger(inner http.Handler, name string) http.Handler {
@@ -104,4 +110,5 @@ func NewRouter() *mux.Router {
 func InitRouter(rc *redis.Client) {
 	RedisClient = rc;
 	InitRedisColsAndRows()
+	InitReduceMapper()
 }
