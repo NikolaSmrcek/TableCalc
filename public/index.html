@@ -18,10 +18,16 @@
     <br>
     <div id="example"></div>
     <br>
-    <form enctype="multipart/form-data" action="http://localhost:8080/upload" method="post">
+    <form id="data" enctype="multipart/form-data" method="post">
         <input type="file" name="file" />
+        <input type="text" name="wordsOfInterest" />
         <input type="submit" value="upload" />
     </form>
+    <br>
+    <div id="stats"></div>
+    <div id="punctuations"></div>
+    <div id="wordsOfInterest"></div>
+    <div id="wordsOfNoInterest"></div>
     <script src="scripts/vendor/jquery.min.js"></script>
     <script src="scripts/vendor/handsontable.full.min.js"></script>
     <script src="scripts/main.js"></script>

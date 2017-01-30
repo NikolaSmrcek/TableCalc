@@ -8,25 +8,31 @@ import (
 	"unicode"
 	"io/ioutil"
 	"os"
-	"time"
 )
+
+
+type MapReduceStruct struct {
+	Stats map[string]string `json:"stats,omitempty"`
+	Punctuations map[string]string `json:"punctuations,omitempty"`
+	WordsOfNoInterest map[string]string `json:"wordsOfNoInterest,omitempty"`
+	WordsOfInterest map[string]string `json:"wordsOfInterest,omitempty"`
+}
+
 
 var WorkingDirectory string;
 
 func LoaderFunction(w http.ResponseWriter, req *http.Request){
 	statusCode := http.StatusOK;
-	responseMessage := "Ok";
-
 	fmt.Println("Starting to split string.");
 
-
-	file, handler, err := req.FormFile("file")
+	wordsOfInterest := req.FormValue("wordsOfInterest");
+	file, handler, err := req.FormFile("file");
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(err);
 	}
-	data, err := ioutil.ReadAll(file)
+	data, err := ioutil.ReadAll(file);
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(err);
 	}
 
 	// TODO see what's wrong with the file path
@@ -48,23 +54,68 @@ func LoaderFunction(w http.ResponseWriter, req *http.Request){
 	for i, v := range words{
 		redisValues[i] = v;
 	}
+	clearRedisHashes();
 	RedisClient.RPush("loadedElements", redisValues...);
 	var totalElements interface{} = len(words);
 	RedisClient.HSet("stats","totalElements",totalElements);
 
-	_mapper();
+	_mapper(removePunctuations(wordsOfInterest));
 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8");
 	w.WriteHeader(statusCode);
-	json.NewEncoder(w).Encode(responseMessage);
+	json.NewEncoder(w).Encode(getMapReduceResult());
 }
 
-func _mapper(){
+func removePunctuations(stringData string) []string{
+	replacer := strings.NewReplacer(",", " ", ".", " ", ";", " ", "!", " ", "?", " ", ":", " ")
+	stringData = replacer.Replace(stringData)
+	return _fields(stringData)
+}
+
+func clearRedisHashes(){
+	fmt.Println("Clearing hashes used for preforming map-reduce...");
+	RedisClient.Del([]string{"stats","hpunctuations","hwordsOfNoInterest", "hwordsOfInterest"}...)
+}
+
+func getMapReduceResult() MapReduceStruct{
+	fmt.Println("getMapReduceResult");
+	var mrr MapReduceStruct;
+
+	mrr.Stats = _getHashValues("stats");
+	mrr.Punctuations = _getHashValues("hpunctuations");
+	mrr.WordsOfNoInterest = _getHashValues("hwordsOfNoInterest");
+	mrr.WordsOfInterest = _getHashValues("hwordsOfInterest");
+
+	return mrr;
+}
+
+func _getHashValues(hash_key string) map[string]string{
+
+	hashKeys := RedisClient.HKeys(hash_key).Val()
+	hashValues := RedisClient.HMGet(hash_key, hashKeys...).Val()
+
+	map_value := make(map[string]string, len(hashKeys));
+
+
+	//fmt.Println("hashKeys length: ", len(hashKeys));
+	//fmt.Println("hashValues length: ", len(hashValues));
+
+	for i:=0;i < len(hashKeys); i++{
+		map_value[hashKeys[i]] = hashValues[i].(string);
+	}
+
+	return map_value
+}
+
+func _mapper(wordsOfInterest []string){
 
 	//unicode.Terminal_Punctuation
 	fmt.Println("Running mapper...")
 	punctuations := []string{",", ".", ";", ":", "!", "?"};
-	wordsOfInterest := []string{"string", "regex"};
+	//wordsOfInterest := []string{"string", "regex"};
+	fmt.Println("Mapper received: ", wordsOfInterest);
+	//fmt.Println("Mapper received: ", wordsOfInterest);
+
 	fmt.Println("Punctuations: ", punctuations)
 	for element := RedisClient.LPop("loadedElements").Val(); element != ""; element = RedisClient.LPop("loadedElements").Val(){
 		elementMatched := false;

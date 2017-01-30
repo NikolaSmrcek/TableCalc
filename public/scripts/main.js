@@ -4,6 +4,11 @@
 
 var hot = null;
 
+var stats = null,
+    punctuations = null,
+    wordsOfInterest = null,
+    wordsOfNoInterest = null;
+
 document.addEventListener("DOMContentLoaded", function () {
     // data = [
     //    []
@@ -207,4 +212,78 @@ function makeAjaxCall(type, url, data, successCallback, dataType){
     }
 
     $.ajax(ajaxOptions);
+}
+
+//adding listener for submit
+$("form#data").submit(function(){
+
+    var formData = new FormData($(this)[0]);
+
+    $.ajax({
+        url: "upload",
+        type: 'POST',
+        data: formData,
+        async: false,
+        success: function (data) {
+            if (data && data.stats){
+                stats = data.stats;
+                _loadHanson("stats", extractFromObjectForHandsonTable(data.stats));
+            }
+            if (data && data.punctuations){
+                punctuations = data.punctuations;
+                _loadHanson("punctuations", extractFromObjectForHandsonTable(data.punctuations));
+            }
+            if (data && data.wordsOfInterest){
+                wordsOfInterest = data.wordsOfInterest;
+                _loadHanson("wordsOfInterest", extractFromObjectForHandsonTable(data.wordsOfInterest));
+            }
+            if (data && data.wordsOfNoInterest){
+                wordsOfNoInterest = data.wordsOfNoInterest;
+                _loadHanson("wordsOfNoInterest", extractFromObjectForHandsonTable(data.wordsOfNoInterest));
+            }
+        },
+        cache: false,
+        contentType: false,
+        processData: false
+    });
+
+    return false;
+});
+
+function extractFromObjectForHandsonTable(data){
+    handsonData = [];
+
+    for (var key in data){
+        if (data.hasOwnProperty(key)) {
+            handsonData.push([key, data[key]]);
+        }
+    }
+    console.log("Handson data: ", handsonData);
+    return handsonData;
+}
+
+/*
+ var data = [
+ ["", "Ford", "Volvo", "Toyota", "Honda"],
+ ["2016", 10, 11, 12, 13],
+ ["2017", 20, 11, 14, 13],
+ ["2018", 30, 15, 12, 13]
+ ],
+ */
+
+function _loadHanson(containerId, data){
+    var container = document.getElementById(containerId);
+    console.log("Loading handson table.");
+    var hot = new Handsontable(container, {
+        data: data,
+        //minSpareCols: 1,
+        //minSpareRows: 1,
+        rowHeaders: true,
+        colHeaders: true,
+        contextMenu: true,
+        manualRowResize: true,
+        columnSorting: true,
+        manualColumnResize: true,
+        readOnly: true
+    });
 }
