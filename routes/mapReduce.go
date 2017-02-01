@@ -77,6 +77,13 @@ func clearRedisHashes(){
 	RedisClient.Del([]string{"stats","hpunctuations","hwordsOfNoInterest", "hwordsOfInterest"}...)
 }
 
+func GetMapReduceResult(w http.ResponseWriter, req *http.Request){
+	statusCode := http.StatusOK;
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8");
+	w.WriteHeader(statusCode);
+	json.NewEncoder(w).Encode(getMapReduceResult());
+}
+
 func getMapReduceResult() MapReduceStruct{
 	fmt.Println("getMapReduceResult");
 	var mrr MapReduceStruct;

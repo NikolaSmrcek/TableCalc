@@ -19,17 +19,34 @@
     <div id="example"></div>
     <br>
     <form id="data" enctype="multipart/form-data" method="post">
-        <input type="file" name="file" />
+        <input id="inputFile" type="file" name="file" />
         <input type="text" name="wordsOfInterest" />
         <input type="submit" value="upload" />
     </form>
     <br>
-    <div id="stats"></div>
-    <div id="punctuations"></div>
-    <div id="wordsOfInterest"></div>
-    <div id="wordsOfNoInterest"></div>
+    <div>
+        <div id="stats"></div>
+        <div id="statsGraph"></div>
+    </div>
+    <div>
+        <div id="punctuations"></div>
+        <div id="punctuationsGraph"></div>
+
+    </div>
+    <div>
+        <div id="wordsOfInterest"></div>
+        <div id="wordsOfInterestGraph"></div>
+
+    </div>
+    <div>
+        <div id="wordsOfNoInterest"></div>
+        <div id="wordsOfNoInterestGraph"></div>
+
+    </div>
     <script src="scripts/vendor/jquery.min.js"></script>
     <script src="scripts/vendor/handsontable.full.min.js"></script>
+    <script src="scripts/vendor/highcharts.min.js"></script>
+    <script src="scripts/vendor/highcharts.exporting.min.js"></script>
     <script src="scripts/main.js"></script>
 </body>
 </html>

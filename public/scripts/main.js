@@ -9,12 +9,14 @@ var stats = null,
     wordsOfInterest = null,
     wordsOfNoInterest = null;
 
+var handSonTables = {};
+
 document.addEventListener("DOMContentLoaded", function () {
     // data = [
     //    []
     // ];
     makeAjaxCall(null,"getInitData",null,initHandsonTable,null);
-
+    makeAjaxCall(null,"getMapReduceResult",null,getMapReduceResult,null);
 });
 
 
@@ -134,7 +136,7 @@ function initHandsonTable(data, textStatus, jqXHR){
 
 function formatHotGetDataForRedis(all_data){
     if(!all_data || all_data.length == 0){
-        console.log("Changes should be array of at least one element.")
+        console.log("Changes should be array of at least one element.");
         return;
     }
     var data = [];
@@ -148,7 +150,7 @@ function formatHotGetDataForRedis(all_data){
                 "column": j,
                 "value": row[j]
             };
-            cell["redisKey"] = "CELL_"+i.toString()+"_"+j.toString()
+            cell["redisKey"] = "CELL_"+i.toString()+"_"+j.toString();
             data.push(cell);
         }
     }
@@ -158,7 +160,7 @@ function formatHotGetDataForRedis(all_data){
 
 function formatChangesForRedis(changes){
     if(!changes || changes.length == 0){
-        console.log("Changes should be array of at least one element.")
+        console.log("Changes should be array of at least one element.");
         return;
     }
     var data = [];
@@ -215,8 +217,11 @@ function makeAjaxCall(type, url, data, successCallback, dataType){
 }
 
 //adding listener for submit
-$("form#data").submit(function(){
-
+$("form#data").submit(function(e){
+    if(document.getElementById("inputFile").files.length == 0){
+        alert("Select at least one file to upload.");
+        return false;
+    }
     var formData = new FormData($(this)[0]);
 
     $.ajax({
@@ -224,24 +229,7 @@ $("form#data").submit(function(){
         type: 'POST',
         data: formData,
         async: false,
-        success: function (data) {
-            if (data && data.stats){
-                stats = data.stats;
-                _loadHanson("stats", extractFromObjectForHandsonTable(data.stats));
-            }
-            if (data && data.punctuations){
-                punctuations = data.punctuations;
-                _loadHanson("punctuations", extractFromObjectForHandsonTable(data.punctuations));
-            }
-            if (data && data.wordsOfInterest){
-                wordsOfInterest = data.wordsOfInterest;
-                _loadHanson("wordsOfInterest", extractFromObjectForHandsonTable(data.wordsOfInterest));
-            }
-            if (data && data.wordsOfNoInterest){
-                wordsOfNoInterest = data.wordsOfNoInterest;
-                _loadHanson("wordsOfNoInterest", extractFromObjectForHandsonTable(data.wordsOfNoInterest));
-            }
-        },
+        success: getMapReduceResult,
         cache: false,
         contentType: false,
         processData: false
@@ -249,6 +237,26 @@ $("form#data").submit(function(){
 
     return false;
 });
+
+function getMapReduceResult(data){
+    if (data) {
+        _loadHanson("stats", extractFromObjectForHandsonTable(data.stats));
+        _loadHighChartsGraph(extractDataForHighChartsGraph(data.stats), "statsGraph", "Overall words statistics", "Overall statistics");
+
+        _loadHanson("punctuations", extractFromObjectForHandsonTable(data.punctuations));
+        _loadHighChartsGraph(extractDataForHighChartsGraph(data.punctuations), "punctuationsGraph", "Top 5 punctuations", "Punctuations");
+
+        _loadHanson("wordsOfInterest", extractFromObjectForHandsonTable(data.wordsOfInterest));
+        _loadHighChartsGraph(extractDataForHighChartsGraph(data.wordsOfInterest), "wordsOfInterestGraph", "Top 5 words of interest", "wordsOfInterest");
+
+        _loadHanson("wordsOfNoInterest", extractFromObjectForHandsonTable(data.wordsOfNoInterest));
+        _loadHighChartsGraph(extractDataForHighChartsGraph(data.wordsOfNoInterest), "wordsOfNoInterestGraph", "Top 5 words of no interest", "wordsOfNoInterest");
+    }
+}
+
+function destoryHotTable(containerId){
+
+}
 
 function extractFromObjectForHandsonTable(data){
     handsonData = [];
@@ -274,16 +282,97 @@ function extractFromObjectForHandsonTable(data){
 function _loadHanson(containerId, data){
     var container = document.getElementById(containerId);
     console.log("Loading handson table.");
-    var hot = new Handsontable(container, {
-        data: data,
-        //minSpareCols: 1,
-        //minSpareRows: 1,
-        rowHeaders: true,
-        colHeaders: true,
-        contextMenu: true,
-        manualRowResize: true,
-        columnSorting: true,
-        manualColumnResize: true,
-        readOnly: true
+    if(handSonTables[containerId]){
+        handSonTables[containerId].loadData(data);
+    }
+    else{
+        handSonTables[containerId] = new Handsontable(container, {
+            data: data,
+            //minSpareCols: 1,
+            //minSpareRows: 1,
+            rowHeaders: true,
+            colHeaders: true,
+            contextMenu: true,
+            manualRowResize: true,
+            columnSorting: true,
+            manualColumnResize: true,
+            readOnly: true
+        });
+    }
+}
+
+function extractDataForHighChartsGraph(data){
+    highChartsdata = [];
+
+    for (var key in data){
+        if (data.hasOwnProperty(key)) {
+            highChartsdata.push({"name": key, "y":parseInt(data[key], 10)} );
+            //highChartsdata.push([key, data[key]]);
+        }
+    }
+
+    highChartsdata.sort(function(a, b){
+       return  b.y - a.y;
+    });
+
+    highChartsdata.splice(5);
+
+    return highChartsdata;
+}
+
+function _loadHighChartsGraph(data, container, text, seriesName){
+    /*
+     [{
+     name: 'Microsoft Internet Explorer',
+     y: 56.33
+     }, {
+     name: 'Chrome',
+     y: 24.03,
+     sliced: true,
+     selected: true
+     }, {
+     name: 'Firefox',
+     y: 10.38
+     }, {
+     name: 'Safari',
+     y: 4.77
+     }, {
+     name: 'Opera',
+     y: 0.91
+     }, {
+     name: 'Proprietary or Undetectable',
+     y: 0.2
+     }]
+     */
+    console.log("Highcharts data: ", data);
+    Highcharts.chart(container, {
+        chart: {
+            plotBackgroundColor: null,
+            plotBorderWidth: null,
+            plotShadow: false,
+            type: 'pie'
+        },
+        title: {
+            text: text
+        },
+        tooltip: {
+            //{point.percentage:.1f}
+            pointFormat: '{series.name}: <b>{point.y}</b>'
+        },
+        plotOptions: {
+            pie: {
+                allowPointSelect: true,
+                cursor: 'pointer',
+                dataLabels: {
+                    enabled: false
+                },
+                showInLegend: true
+            }
+        },
+        series: [{
+            name: seriesName,
+            colorByPoint: true,
+            data: data
+        }]
     });
 }

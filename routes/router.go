@@ -57,6 +57,12 @@ var routes = Routes{
 		"/upload",
 		LoaderFunction,
 	},
+	Route{
+		"GetMapReduceResult",
+		"GET",
+		"/getMapReduceResult",
+		GetMapReduceResult,
+	},
 }
 // Used for logging function execution time and to know which route has been called.
 func logger(inner http.Handler, name string) http.Handler {
